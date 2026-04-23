@@ -15,30 +15,49 @@ jobs:
 
     steps:
 
+    # 🔹 Checkout Code
     - name: Checkout
       uses: actions/checkout@v3
 
-    # 🟢 Build Docker Image
-    - name: Build
-      run: docker build -t my-app .
+    # 🔹 Build Docker Image
+    - name: Build Docker Image
+      run: |
+        docker build -t my-app .
 
-    # 🟡 Trivy Scan (ALLOW HIGH, BLOCK ONLY CRITICAL)
-    - name: Scan
+    # 🔹 Trivy Scan (Fail only for CRITICAL)
+    - name: Trivy Scan
       uses: aquasecurity/trivy-action@master
       with:
         image-ref: my-app
         severity: CRITICAL
         exit-code: 1
 
-    # 🟢 Configure AWS
-    - name: AWS Login
+    # 🔹 Configure AWS Credentials
+    - name: Configure AWS
       uses: aws-actions/configure-aws-credentials@v2
       with:
         aws-access-key-id: ${{ secrets.AWS_KEY }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET }}
         aws-region: ${{ env.AWS_REGION }}
 
-    # 🟢 Login to ECR
-    - name: Login to ECR
+    # 🔹 Login to ECR (FIXED REGION ISSUE)
+    - name: Login to Amazon ECR
       run: |
-        aws ecr get-login-password --region $
+        aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
+        docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+
+    # 🔹 Tag Docker Image (FIXED VARIABLES)
+    - name: Tag Docker Image
+      run: |
+        docker tag my-app:latest ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+
+    # 🔹 Push Docker Image to ECR
+    - name: Push to ECR
+      run: |
+        docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+
+    # 🔹 (Optional) Push with Commit SHA Tag (BEST PRACTICE)
+    - name: Tag with Commit SHA
+      run: |
+        docker tag my-app:latest ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+        docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
