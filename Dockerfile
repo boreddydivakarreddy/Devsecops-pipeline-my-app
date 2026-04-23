@@ -1,5 +1,14 @@
 FROM python:3.11-slim
+
 WORKDIR /app
+
+# 🔥 Update OS packages (IMPORTANT FIX)
+RUN apt-get update && apt-get upgrade -y && apt-get clean
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
 COPY . .
-RUN pip install -r requirements.txt
+
 CMD ["python", "app.py"]
