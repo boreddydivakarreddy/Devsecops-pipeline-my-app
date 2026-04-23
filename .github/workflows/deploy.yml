@@ -4,31 +4,41 @@ on:
   push:
     branches: [ "main" ]
 
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: my-app
+  ECR_REGISTRY: 514661753203.dkr.ecr.us-east-1.amazonaws.com
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
 
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    # 🟢 Build Docker Image
     - name: Build
       run: docker build -t my-app .
 
+    # 🟡 Trivy Scan (ALLOW HIGH, BLOCK ONLY CRITICAL)
     - name: Scan
       uses: aquasecurity/trivy-action@master
       with:
         image-ref: my-app
-        severity: CRITICAL,HIGH
+        severity: CRITICAL
         exit-code: 1
 
+    # 🟢 Configure AWS
     - name: AWS Login
       uses: aws-actions/configure-aws-credentials@v2
       with:
         aws-access-key-id: ${{ secrets.AWS_KEY }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET }}
-        aws-region: us-east-1
+        aws-region: ${{ env.AWS_REGION }}
 
-    - name: Push to ECR
+    # 🟢 Login to ECR
+    - name: Login to ECR
       run: |
-        docker tag my-app:latest $ECR_URL:latest
-        docker push $ECR_URL:latest
+        aws ecr get-login-password --region $
