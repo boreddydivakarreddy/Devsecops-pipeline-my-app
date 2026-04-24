@@ -2,7 +2,6 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# 🔥 Update OS packages (IMPORTANT FIX)
 RUN apt-get update && apt-get upgrade -y && apt-get clean
 
 COPY requirements.txt .
